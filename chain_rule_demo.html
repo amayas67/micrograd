@@ -22,6 +22,7 @@
             --accent2: #a6e3a1;
             --accent3: #f9e2af;
             --accent4: #f38ba8;
+            --accent5: #fab387;
             --border: #45475a;
         }
 
@@ -136,6 +137,35 @@
             text-align: center;
         }
 
+        /* Style pour la carte subtilité */
+        .subtlety-card {
+            background-color: rgba(250, 179, 135, 0.05);
+            border-left: 4px solid var(--accent5);
+            border-radius: 8px;
+            padding: 25px 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtlety-card h2 {
+            color: var(--accent5);
+            margin-top: 0;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .subtlety-card .math-block {
+            background-color: rgba(250, 179, 135, 0.1);
+            border: 1px solid var(--accent5);
+        }
+
+        .highlight {
+            color: var(--accent4);
+            font-weight: bold;
+        }
+
         code {
             background-color: rgba(0, 0, 0, 0.3);
             padding: 2px 6px;
@@ -211,13 +241,19 @@
             <h2><span class="step-number">2</span> Now do the same with $g$</h2>
             <p>
                 We now also let $g$ vary: $g(x) \to g(x+h)$.
-                Applying the composite derivative formula through the $g$ path adds a new term:
+                Applying the composite derivative formula through the $g$ path adds a new term.
+                <strong>But notice carefully:</strong> we are varying $g$ starting from the state where $f$ has <em>already</em> moved to $f(x+h)$.
             </p>
+            <p>So the derivative with respect to $g$ is evaluated at the <span class="highlight">new point</span> $(f(x+h), g(x))$:</p>
             <div class="math-block">
-                $$L\bigl(f(x+h),\; g(x+h)\bigr) = L\bigl(f(x),\; g(x)\bigr) + \frac{\partial L}{\partial f} \cdot f'(x) \cdot h + \frac{\partial L}{\partial g} \cdot g'(x) \cdot h$$
+                $$L\bigl(f(x+h),\; g(x+h)\bigr) = L\bigl(f(x+h),\; g(x)\bigr) + \frac{\partial L}{\partial g}\bigg|_{(f(x+h),\, g(x))} \cdot g'(x) \cdot h$$
+            </div>
+            <p>Substituting the result from Step 1:</p>
+            <div class="math-block">
+                $$L\bigl(f(x+h),\; g(x+h)\bigr) = L\bigl(f(x),\; g(x)\bigr) + \frac{\partial L}{\partial f} \cdot f'(x) \cdot h + \frac{\partial L}{\partial g}\bigg|_{(f(x+h),\, g(x))} \cdot g'(x) \cdot h$$
             </div>
             <div class="annotation">
-                ↳ Both paths contribute: the $f$ path and the $g$ path, each via the composite derivative formula.
+                ↳ Both paths contribute, but the $g$-path derivative is evaluated at the <em>shifted</em> point $f(x+h)$, not $f(x)$!
             </div>
         </div>
 
@@ -226,25 +262,49 @@
             <h2><span class="step-number">3</span> Subtract $L$ from both sides and divide by $h$</h2>
             <p>Subtracting $L\bigl(f(x), g(x)\bigr)$:</p>
             <div class="math-block">
-                $$L\bigl(f(x+h),\; g(x+h)\bigr) - L\bigl(f(x),\; g(x)\bigr) = \frac{\partial L}{\partial f} \cdot f'(x) \cdot h + \frac{\partial L}{\partial g} \cdot g'(x) \cdot h$$
+                $$L\bigl(f(x+h),\; g(x+h)\bigr) - L\bigl(f(x),\; g(x)\bigr) = \frac{\partial L}{\partial f} \cdot f'(x) \cdot h + \frac{\partial L}{\partial g}\bigg|_{(f(x+h),\, g(x))} \cdot g'(x) \cdot h$$
             </div>
             <p>Dividing by $h$:</p>
             <div class="math-block">
-                $$\frac{L\bigl(f(x+h),\; g(x+h)\bigr) - L\bigl(f(x),\; g(x)\bigr)}{h} = \frac{\partial L}{\partial f} \cdot f'(x) + \frac{\partial L}{\partial g} \cdot g'(x)$$
+                $$\frac{L\bigl(f(x+h),\; g(x+h)\bigr) - L\bigl(f(x),\; g(x)\bigr)}{h} = \frac{\partial L}{\partial f} \cdot f'(x) + \frac{\partial L}{\partial g}\bigg|_{(f(x+h),\, g(x))} \cdot g'(x)$$
+            </div>
+        </div>
+
+        <!-- Subtlety Card -->
+        <div class="subtlety-card">
+            <h2>⚠️ Subtlety — The Shifted Evaluation Point</h2>
+            <p>
+                Notice the term $\dfrac{\partial L}{\partial g}\bigg|_{(f(x+h),\, g(x))}$.
+                The partial derivative is evaluated at $f(x+h)$, not $f(x)$.
+                Yet, the classical chain rule formula evaluates everything at $(f(x), g(x))$.
+            </p>
+            <p><strong>How do we justify replacing $f(x+h)$ with $f(x)$?</strong></p>
+            <p>When we take the limit $h \to 0$:</p>
+            <ol>
+                <li>$f(x+h) \to f(x)$ by <strong>continuity of $f$</strong> (every differentiable function is continuous)</li>
+                <li>$\dfrac{\partial L}{\partial g}\bigg|_{(f(x+h),\, g(x))} \to \dfrac{\partial L}{\partial g}\bigg|_{(f(x),\, g(x))}$ by <strong>continuity of the partial derivative</strong></li>
+            </ol>
+            <div class="math-block">
+                $$\lim_{h \to 0} \frac{\partial L}{\partial g}\bigg|_{(f(x+h),\, g(x))} = \frac{\partial L}{\partial g}\bigg|_{(f(x),\, g(x))}$$
+            </div>
+            <div class="note">
+                🔑 <strong>Key requirement:</strong> This is why we need $L$ to be of class $C^1$ (continuously differentiable).
+                Without continuity of the partial derivatives, this "sliding" of the evaluation point would not be justified!
             </div>
         </div>
 
         <!-- Conclusion -->
         <div class="conclusion">
             <h2>✅ Conclusion — The Chain Rule</h2>
-            <p>Taking the limit as $h \to 0$:</p>
+            <p>Taking the limit as $h \to 0$, the shifted evaluation point converges to $(f(x), g(x))$:</p>
             <div class="math-block">
-                $$\boxed{\frac{dL}{dx} = \frac{\partial L}{\partial f} \cdot \frac{df}{dx} + \frac{\partial L}{\partial g} \cdot \frac{dg}{dx}}$$
+                $$\boxed{\frac{dL}{dx} = \frac{\partial L}{\partial f}\bigg|_{(f(x),\, g(x))} \cdot \frac{df}{dx} + \frac{\partial L}{\partial g}\bigg|_{(f(x),\, g(x))} \cdot \frac{dg}{dx}}$$
             </div>
             <p style="margin-top: 20px; color: var(--accent2);">
                 The total derivative of $L$ is the sum of contributions from each path.
                 Each contribution is obtained by fixing the other functions and applying
-                the composite derivative formula.
+                the composite derivative formula. The continuity of partial derivatives ensures
+                all terms can be evaluated at the same base point $(f(x), g(x))$.
             </p>
         </div>
 
