@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chain Rule Proof — Single Variable</title>
+    <script>
+        MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <style>
+        :root {
+            --bg: #1e1e2e;
+            --bg-card: #2a2a3c;
+            --text: #cdd6f4;
+            --accent: #89b4fa;
+            --accent2: #a6e3a1;
+            --accent3: #f9e2af;
+            --accent4: #f38ba8;
+            --border: #45475a;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 40px 20px;
+            line-height: 1.8;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--accent);
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--accent2);
+            margin-bottom: 40px;
+            font-style: italic;
+        }
+
+        .card {
+            background-color: var(--bg-card);
+            border-left: 4px solid var(--accent);
+            border-radius: 8px;
+            padding: 25px 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .card h2 {
+            color: var(--accent);
+            margin-top: 0;
+            font-size: 1.3em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-number {
+            background: var(--accent);
+            color: var(--bg);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85em;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .math-block {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            padding: 15px 20px;
+            margin: 15px 0;
+            overflow-x: auto;
+        }
+
+        .annotation {
+            color: var(--accent3);
+            font-style: italic;
+            margin: 10px 0;
+        }
+
+        .conclusion {
+            background: linear-gradient(135deg, var(--bg-card), #313244);
+            border-left: 4px solid var(--accent2);
+            border-radius: 8px;
+            padding: 30px;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .conclusion h2 {
+            color: var(--accent2);
+            justify-content: center;
+        }
+
+        .conclusion .math-block {
+            border: 1px solid var(--accent2);
+        }
+
+        .note {
+            background-color: rgba(249, 226, 175, 0.1);
+            border-left: 3px solid var(--accent3);
+            border-radius: 4px;
+            padding: 10px 15px;
+            margin: 15px 0;
+            color: var(--accent3);
+            font-size: 0.95em;
+        }
+
+        .formula-box {
+            background-color: rgba(137, 180, 250, 0.1);
+            border: 1px solid var(--accent);
+            border-radius: 6px;
+            padding: 15px 20px;
+            margin: 15px 0;
+            text-align: center;
+        }
+
+        code {
+            background-color: rgba(0, 0, 0, 0.3);
+            padding: 2px 6px;
+            border-radius: 3px;
+            color: var(--accent4);
+            font-family: 'Consolas', monospace;
+        }
+
+        hr {
+            border: none;
+            border-top: 1px solid var(--border);
+            margin: 30px 0;
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <div class="container">
+        <h1>⛓️ Chain Rule Proof — Single Variable</h1>
+        <p class="subtitle">Deriving the chain rule for $L(f(x))$ using differentials</p>
+
+        <!-- Setup -->
+        <div class="card">
+            <h2>🎯 Goal</h2>
+            <p>Consider a composite function with a single variable path:</p>
+            <div class="math-block">
+                $$L = L\bigl(f(x)\bigr)$$
+            </div>
+            <p>We want to compute the derivative of $L$ with respect to $x$, that is, $\dfrac{dL}{dx}$.</p>
+            <div class="note">
+                💡 <strong>Simplification:</strong> If we had $L(f(x), g(x))$, we could treat $g$ as a constant
+                and focus only on the $f$ path. This gives us the simpler case $L(f(x))$.
+            </div>
+        </div>
+
+        <!-- Step 1 -->
+        <div class="card">
+            <h2><span class="step-number">1</span> Differential of $f$</h2>
+            <p>
+                By definition of the derivative, a small change $dx$ in $x$ produces a change in $f$ of:
+            </p>
+            <div class="math-block">
+                $$df(x) = f'(x) \cdot dx$$
+            </div>
+            <p>Therefore, the new value of $f$ is:</p>
+            <div class="math-block">
+                $$f(x + dx) = f(x) + f'(x) \cdot dx$$
+            </div>
+            <div class="annotation">
+                ↳ This is the linear approximation of $f$ near $x$.
+            </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="card">
+            <h2><span class="step-number">2</span> Differential of $L$ at any point</h2>
+            <p>
+                For any differentiable function $L$, a small change $\varepsilon$ in its <em>input</em> produces:
+            </p>
+            <div class="math-block">
+                $$dL = L(u + \varepsilon) - L(u) = L'(u) \cdot \varepsilon \quad \text{as } \varepsilon \to 0$$
+            </div>
+            <div class="annotation">
+                ↳ Here $u$ is the input of $L$ and $\varepsilon$ is a change <em>in that input</em> —
+                not in $x$. We use $\varepsilon$ to keep it distinct from $dx$.
+            </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="card">
+            <h2><span class="step-number">3</span> Apply to $L$ evaluated at $u = f(x)$</h2>
+            <p>
+                We now use the formula from Step 2 with $u = f(x)$:
+            </p>
+            <div class="math-block">
+                $$dL = L\bigl(f(x) + \varepsilon\bigr) - L\bigl(f(x)\bigr) = L'\bigl(f(x)\bigr) \cdot \varepsilon$$
+            </div>
+            <p>
+                This is valid for any $\varepsilon \to 0$.
+                The question is now: <strong>what is $\varepsilon$ when $x$ changes by $dx$?</strong>
+            </p>
+            <div class="annotation">
+                ↳ $\varepsilon$ is the change in the <em>input of $L$</em>, i.e. the change in $f(x)$.
+                We don't know its value yet — that's what Step 4 computes.
+            </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="card">
+            <h2><span class="step-number">4</span> Identify $\varepsilon$: the change in $f(x)$</h2>
+            <p>
+                From Step 1, when $x$ changes by $dx$, the change in $f(x)$ is:
+            </p>
+            <div class="math-block">
+                $$\varepsilon = f(x + dx) - f(x) = f'(x) \cdot dx$$
+            </div>
+            <p>
+                Since $f'(x)$ is finite and $dx \to 0$, we have $\varepsilon \to 0$ —
+                so the linear approximation in Step 3 remains valid.
+                We can now substitute $\varepsilon = f'(x) \cdot dx$ into the formula from Step 3:
+            </p>
+            <div class="math-block">
+                $$dL = L\bigl(f(x) + \underbrace{f'(x) \cdot dx}_{=\,\varepsilon}\bigr) - L\bigl(f(x)\bigr) = L'\bigl(f(x)\bigr) \cdot \underbrace{f'(x) \cdot dx}_{=\,\varepsilon}$$
+            </div>
+            <div class="note">
+                🔑 <strong>Key step:</strong> The substitution $\varepsilon = f'(x) \cdot dx$
+                is valid because $f'(x)$ is finite, so $\varepsilon \to 0$ as $dx \to 0$ —
+                the linear approximation of $L$ remains exact.
+            </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="card">
+            <h2><span class="step-number">5</span> Recognize $f(x + dx)$</h2>
+            <p>
+                From Step 1, $f(x) + f'(x) \cdot dx = f(x + dx)$, so the left-hand side is simply:
+            </p>
+            <div class="math-block">
+                $$L\bigl(f(x) + f'(x) \cdot dx\bigr) = L\bigl(f(x + dx)\bigr)$$
+            </div>
+            <p>Substituting back, we obtain the final expression for $dL$:</p>
+            <div class="math-block">
+                $$dL = L\bigl(f(x + dx)\bigr) - L\bigl(f(x)\bigr) = L'\bigl(f(x)\bigr) \cdot f'(x) \cdot dx$$
+            </div>
+            <div class="annotation">
+                ↳ This is the actual change in $L$ when $x$ varies by $dx$.
+            </div>
+        </div>
+
+        <!-- Conclusion -->
+        <div class="conclusion">
+            <h2>✅ Conclusion — The Chain Rule</h2>
+            <p>Dividing both sides by $dx$:</p>
+            <div class="math-block">
+                $$\boxed{\frac{dL}{dx} = L'\bigl(f(x)\bigr) \cdot f'(x)}$$
+            </div>
+            <p>Or equivalently, using Leibniz notation:</p>
+            <div class="math-block">
+                $$\frac{dL}{dx} = \frac{dL}{df} \cdot \frac{df}{dx}$$
+            </div>
+            <p style="margin-top: 20px; color: var(--accent2);">
+                The derivative of a composite function is the product of the derivative
+                of the outer function (evaluated at the inner function) and the derivative
+                of the inner function.
+            </p>
+        </div>
+
+        <hr>
+
+        <!-- Connection to micrograd -->
+        <div class="card">
+            <h2>🐍 Connection to micrograd</h2>
+            <p>
+                This chain rule is exactly what each <code>_backward()</code> closure implements in the code.
+                For a node <code>out = self * other</code>, the loss $L$ depends on <code>out</code>,
+                which depends on <code>self</code> and <code>other</code>. The chain rule gives:
+            </p>
+            <div class="math-block">
+                $$\frac{dL}{d\texttt{self}} = \frac{dL}{d\texttt{out}} \cdot \frac{d\,\texttt{out}}{d\,\texttt{self}}
+                = \texttt{out.grad} \cdot \texttt{other.data}$$
+            </div>
+            <p>Which translates directly to:</p>
+            <div class="math-block" style="text-align:left; font-family: 'Consolas', monospace; font-size: 0.95em; color: var(--accent2);">
+                self.grad &nbsp;+= other.data * out.grad<br>
+                other.grad += self.data &nbsp;* out.grad
+            </div>
+            <div class="annotation">
+                ↳ The <code>+=</code> (and not <code>=</code>) accumulates gradients when a node
+                appears in multiple paths of the graph — this is the multivariate chain rule in action.
+            </div>
+            <p>
+                The <code>topological_order_reversed()</code> function ensures that when
+                <code>_backward()</code> is called on a node, <code>out.grad</code> is already
+                fully computed — so the chain rule application is always valid.
+            </p>
+            <div class="note">
+                💡 <strong>tanh :</strong> For <code>out = tanh(self)</code>, the local derivative is
+                $1 - \tanh^2(x) = 1 - t^2$, so:
+                <div style="margin-top: 8px; font-family: 'Consolas', monospace; color: var(--accent2);">
+                    self.grad += out.grad * (1 - t**2)
+                </div>
+            </div>
+        </div>
+
+        <hr>
+
+        <!-- Connection to multivariate case -->
+        <div class="card">
+            <h2>🔗 Connection to the Multivariate Case</h2>
+            <p>
+                If we had $L(f(x), g(x))$ instead of $L(f(x))$, we would apply this same reasoning
+                to each path separately:
+            </p>
+            <div class="math-block">
+                $$\frac{dL}{dx} = \frac{\partial L}{\partial f} \cdot \frac{df}{dx} + \frac{\partial L}{\partial g} \cdot \frac{dg}{dx}$$
+            </div>
+            <p>
+                Each term is exactly the single-variable chain rule applied to one path,
+                with the other variable held constant.
+            </p>
+            <div class="note">
+                📚 See <strong>Chain Rule Proof — Multivariate</strong> for the detailed derivation
+                including the subtlety of evaluation points.
+            </div>
+        </div>
+    </div>
+</body>
+</html>>
