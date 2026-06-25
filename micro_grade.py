@@ -67,6 +67,45 @@ class Value:
     def __repr__(self):
         return f"Value(data={self.data})"
 
+    def topological_order_reversed(self):
+
+        """
+        Returns a topological ordering of the computation graph starting from this node.
+
+        CRITICAL BUG NOTE (Fixed):
+        - Old implementation appended nodes to 'visited' BEFORE exploring their parents (Pre-order).
+          In graphs where a variable is reused multiple times (e.g., y = a * a), this caused
+          _backward() to execute prematurely on shared nodes before they accumulated gradients
+          from all downstream branches.
+        - Fix implementation uses Depth-First Search (DFS) with Post-order recording. A node
+          is added to the list ONLY after all its dependencies are fully explored. Reversing
+          this list guarantees a valid backpropagation sequence (Output -> Intermediates -> Inputs).
+        """
+        visited = []
+
+        def topological_order_r(node):
+            if node not in visited:
+                # 1. Deeply explore all parent nodes (dependencies) first
+                for child in node._prev:
+                    topological_order_r(child)
+                # 2. Business Logic: Append the node ONLY after all its parents are visited (Post-order)
+                visited.append(node)
+
+        # Trigger the DFS traversal starting from the output node (self)
+        topological_order_r(self)
+
+        # 3. Reverse the post-order list to flow from output back to inputs for backpropagation
+        return list(reversed(visited))
+
+    def cal_backward(self):
+        list_ = self.topological_order_reversed()
+        for node in list_:
+            node.grad = 0.0
+        self.grad = 1.0
+        for node in list_:
+            node._backward()
+
+
 
 # =============================================================================
 # VISUALIZATION
@@ -113,26 +152,6 @@ def draw_dot(root):
     return dot
 
 
-# =============================================================================
-# TOPOLOGICAL SORT (custom implementation)
-# =============================================================================
-
-def topological_order_reversed(o):
-    """Build topological order using pre-order traversal.
-
-    Note: This adds parent before children. It works for our computation
-    graphs because we call _backward immediately on each node.
-    """
-    visited = []
-
-    def topological_order_r(o):
-        if o not in visited:
-            visited.append(o)
-            for child in o._prev:
-                topological_order_r(child)
-
-    topological_order_r(o)
-    return visited
 
 
 # =============================================================================
@@ -152,21 +171,9 @@ if __name__ == "__main__":
     g = e + d; g.label = 'g'      # g = 2
     i = g * h; i.label = 'i'      # i = 6
 
-    # Reset gradients
-    for node in [a, b, c, f, h, e, d, g, i]:
-        node.grad = 0.0
 
-    # Initialize output gradient
-    i.grad = 1.0
-
-    # Build topological order
-    my_liste = topological_order_reversed(i)
-    print("Topological order:", [n.label for n in my_liste])
-
-    # Call _backward on each node in order
-    for node in my_liste:
-        node._backward()
-
+    i.cal_backward()
+    print(i.topological_order_reversed())
     # Print results
     print("\n=== GRADIENTS ===")
     print(f"i.grad = {i.grad}")   # 1.0
@@ -179,7 +186,7 @@ if __name__ == "__main__":
     print(f"a.grad = {a.grad}")   # -9.0
     print(f"b.grad = {b.grad}")   # 6.0
 
-    # Draw and save graph
+    # # Draw and save graph
     # dot = draw_dot(i)
     # dot.render('computation_graph_complex', view=False)
     # print("\nGraph saved to computation_graph_complex.svg")
