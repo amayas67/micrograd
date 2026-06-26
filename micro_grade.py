@@ -24,6 +24,8 @@ class Value:
         self._op = _op  # operation that produced this node
         self.label = label  # for visualization
 
+    def __rsub__(self, other):
+        return other + (-self)
     def __add__(self, other):
         """Addition: out = self + other"""
         other = other if isinstance(other,Value) else Value(other)
@@ -58,6 +60,14 @@ class Value:
 
     def __rmul__(self, other):
         return self * other
+
+    def __neg__(self):
+        return self * -1
+
+    def __sub__(self ,other):
+        return self + (-other)
+
+
 
     def tanh(self):
         """Hyperbolic tangent: out = tanh(self)"""
@@ -193,34 +203,69 @@ def draw_dot(root):
 # =============================================================================
 
 if __name__ == "__main__":
-    # Build complex graph: i = (a*b + (c+f)) * h
+
+    # -------------------------------------------------------------------------
+    # Validation test
+    #
+    # tanh(x) can be implemented directly or using the identity:
+    #
+    #     tanh(x) = (exp(2x) - 1) / (exp(2x) + 1)
+    #
+    # Both implementations should produce identical gradients.
+    # Tiny numerical differences (~1e-15) are expected due to IEEE 754
+    # floating-point rounding.
+    # -------------------------------------------------------------------------
+
+    # Build the computation graph
     a = Value(2.0, label='a')
     b = Value(-3.0, label='b')
     c = Value(10.0, label='c')
     f = Value(-2.0, label='f')
     h = Value(3.0, label='h')
 
-    e = a * b; e.label = 'e'      # e = -6
-    d = c + f; d.label = 'd'      # d = 8
-    g = e + d; g.label = 'g'      # g = 2
-    i = g * h; i.label = 'i'      # i = 6
+    e = a * b; e.label = 'e'
+    d = c + f; d.label = 'd'
+    g = e + d; g.label = 'g'
+    i = g * h; i.label = 'i'
 
+    variables = {
+        "a": a,
+        "b": b,
+        "c": c,
+        "d": d,
+        "e": e,
+        "f": f,
+        "g": g,
+        "h": h,
+        "i": i,
+    }
 
-    i.cal_backward()
-    print(i.topological_order_reversed())
-    # Print results
-    print("\n=== GRADIENTS ===")
-    print(f"i.grad = {i.grad}")   # 1.0
-    print(f"g.grad = {g.grad}")   # 3.0
-    print(f"h.grad = {h.grad}")   # 2.0
-    print(f"e.grad = {e.grad}")   # 3.0
-    print(f"d.grad = {d.grad}")   # 3.0
-    print(f"c.grad = {c.grad}")   # 3.0
-    print(f"f.grad = {f.grad}")   # 3.0
-    print(f"a.grad = {a.grad}")   # -9.0
-    print(f"b.grad = {b.grad}")   # 6.0
+    # ---------------- First implementation ----------------
+    k1 = i.tanh()
+    k1.cal_backward()
 
-    # # Draw and save graph
-    # dot = draw_dot(i)
-    # dot.render('computation_graph_complex', view=False)
-    # print("\nGraph saved to computation_graph_complex.svg")
+    grads_tanh = {name: v.grad for name, v in variables.items()}
+
+    # ---------------- Second implementation ----------------
+    k2 = ((2 * i).exp() - 1) / ((2 * i).exp() + 1)
+    k2.cal_backward()
+
+    grads_exp = {name: v.grad for name, v in variables.items()}
+
+    # ---------------- Comparison ----------------
+    print(f"{'Var':<3} {'tanh':>20} {'exp identity':>20} {'|Δ|':>15}")
+    print("-" * 65)
+
+    for name in variables:
+        diff = abs(grads_tanh[name] - grads_exp[name])
+        print(
+            f"{name:<3} "
+            f"{grads_tanh[name]:>20.16e} "
+            f"{grads_exp[name]:>20.16e} "
+            f"{diff:>15.3e}"
+        )
+
+# Draw and save the computation graph
+    dot = draw_dot(k1) # or k2
+    dot.render("computation_graph_complex", view=False)
+    print("\nGraph saved to computation_graph_complex.svg")
