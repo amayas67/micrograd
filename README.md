@@ -42,6 +42,12 @@ This is a **pedagogical implementation**, not an optimized deep learning library
 Each operation creates a node in a computation graph.
 
 Example:
+a ----*
+       \
+        (*) ---- +
+b ----*        |
+               d
+
 
 ```python
 a = Value(2.0)
@@ -50,8 +56,3 @@ c = a * b
 d = c + 1
 d.cal_backward()
 
-a ----*
-       \
-        (*) ---- +
-b ----*        |
-               d
