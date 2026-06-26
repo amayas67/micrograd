@@ -49,3 +49,9 @@ b = Value(-3.0)
 c = a * b
 d = c + 1
 d.cal_backward()
+
+a ----*
+       \
+        (*) ---- +
+b ----*        |
+               d
