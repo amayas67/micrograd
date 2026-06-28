@@ -1,99 +1,154 @@
-micrograd
+# micrograd — Scalar Autograd Engine from Scratch
 
-    From scratch autograd engine — understand backpropagation, don't just use it.
+A full reimplementation of a scalar-valued automatic differentiation engine,
+built independently before consulting reference solutions.
 
-A minimal, educational implementation of automatic differentiation (reverse-mode autograd) in pure Python, inspired by Andrej Karpathy's micrograd.
-No PyTorch. No TensorFlow. Just Python, math, and the chain rule.
-Why this repo?
-Most people learn deep learning by calling loss.backward() and hoping for the best.
-This repo is the antidote: every gradient is computed by hand, every topological sort is built from scratch, and every operation traces its own local derivative.
-If you want to stop being a user of black boxes and start understanding why neural networks learn, start here.
-What you get
-Core engine (micro_grade.py)
-Table
-Feature	Description
-Value class	Scalar tensor with autograd support
-+, *, -, /, **	Basic arithmetic with full gradient tracking
-tanh(), exp()	Activation functions with local derivatives
-topological_order_reversed()	Post-order DFS topological sort for correct backprop
-cal_backward()	Reset-safe backward pass (output → inputs)
-draw_dot()	Graphviz visualization of the computation graph
-Mathematical proofs (HTML)
-Table
-File	Content
-chain_rule_demo.html	Multivariate chain rule — the subtlety of shifted evaluation points and C1  continuity
-demo_single_fonction_chain.html	Single-variable chain rule — why arepsilon = f'(x) \cdot dx  is valid
-These are not copy-pasted from a textbook. They are step-by-step derivations written to justify every line of code in micro_grade.py.
-Validation test
-The repo includes a numerical validation that compares two implementations of anh(x) :
+---
 
-    Direct: i.tanh()
-    Via identity: e2x+1e2x−1​ 
+## What this is
 
-Both paths produce identical gradients (within floating-point precision, ∼10−15 ), proving the engine is consistent.
-PyTorch parity check (pytorch_demo.py)
-A side-by-side comparison with PyTorch on the same computation graph. Our Value gradients match PyTorch's Tensor.grad exactly.
-Quick start
-Python
+A from-scratch implementation of backpropagation over a dynamically built
+computation graph — the same mechanism that powers PyTorch, JAX, and every
+modern deep learning framework.
 
-from micro_grade import Value
+The engine is scalar: every value in the graph is a single float. This
+constraint strips away all the complexity of tensor broadcasting and exposes
+the pure mathematical structure of gradient computation.
 
-# Build a computation graph
-a = Value(2.0, label='a')
-b = Value(-3.0, label='b')
-c = Value(10.0, label='c')
+---
 
-d = a * b        # -6
-e = d + c        # 4
-f = e.tanh()     # tanh(4)
+## What is implemented
 
-# Backpropagate
-f.cal_backward()
+### Core engine — `micro_grade.py`
 
-# Inspect gradients
-print(f"a.grad = {a.grad}")   # ∂f/∂a
-print(f"b.grad = {b.grad}")   # ∂f/∂b
-print(f"c.grad = {c.grad}")   # ∂f/∂c
+The `Value` class wraps a scalar and tracks everything needed for autograd:
 
-Visualize the graph:
-Python
+| Component | Description |
+|---|---|
+| `data` | The scalar value |
+| `grad` | Gradient of the output w.r.t. this node |
+| `_prev` | Parent nodes in the computation graph |
+| `_backward` | Closure that computes local gradients |
 
-from micro_grade import draw_dot
-dot = draw_dot(f)
-dot.render("graph", view=True)
+**Supported operations:**
 
-The chain rule, in code
-Every _backward() closure is a direct translation of the chain rule.
-For multiplication out = self * other:
-Python
+`__add__`, `__radd__`, `__mul__`, `__rmul__`, `__pow__`, `__neg__`,
+`__sub__`, `__rsub__`, `__truediv__`, `__rtruediv__`, `tanh`, `exp`
 
-def _backward():
-    self.grad  += other.data * out.grad   # dL/dself = dL/dout * dout/dself
-    other.grad += self.data  * out.grad   # dL/dother = dL/dout * dout/dother
+Every operation:
+1. Computes the forward value
+2. Registers a `_backward` closure implementing the local chain rule
+3. Tracks parent nodes for graph traversal
 
-The += (not =) is the multivariate chain rule in action: gradients accumulate when a node is used in multiple paths.
-Project structure
-plain
+**Backward pass:**
 
+```python
+loss.cal_backward()
+```
+
+Internally:
+- Builds a **post-order topological sort** via DFS (children before parents)
+- Resets all gradients to `0.0`
+- Sets `self.grad = 1.0` (seed gradient)
+- Calls `_backward()` on each node in reverse topological order
+
+**Why `+=` and not `=` in every `_backward`:**
+
+When a node appears in multiple paths of the graph (e.g. `y = a * a`),
+its gradient must accumulate contributions from every path.
+This is the multivariate chain rule:
+
+```
+dL/da = dL/de1 * de1/da  +  dL/de2 * de2/da  +  ...
+```
+
+The `+=` is not a convention — it is a mathematical necessity.
+
+---
+
+### Neural network — `MLP_object.py`
+
+Built on top of the autograd engine:
+
+```
+Neuron   — tanh(w·x + b), exposes parameters()
+Layer    — collection of independent neurons
+MLP      — sequence of layers, forward propagation
+```
+
+`parameters()` is implemented at every level (Neuron → Layer → MLP),
+allowing a single call to retrieve all trainable weights and biases.
+
+---
+
+### Training loop — `train_demo.py`
+
+Full gradient descent loop:
+
+```python
+for epoch in range(1000):
+    ypred, loss = recalculate(n, xs, ys)   # forward pass + MSE loss
+    loss.cal_backward()                     # backward pass
+    for p in n.parameters():
+        p.data -= learning_rate * p.grad   # gradient descent step
+```
+
+Note: `cal_backward()` resets all gradients before each backward pass.
+In PyTorch this must be done explicitly with `optimizer.zero_grad()`.
+
+---
+
+### Validation against PyTorch — `pytorch_demo.py`
+
+Gradients computed by the custom engine are verified against PyTorch autograd
+on the same computation graph. Results match to floating-point precision.
+
+---
+
+### Mathematical proofs — `*.html`
+
+Two rigorous derivations of the chain rule, written as interactive documents:
+
+- **`chain_rule_demo.html`** — Multivariate chain rule: `L(f(x), g(x))`
+  including the subtlety of the shifted evaluation point and the C¹ regularity requirement.
+
+- **`chain_rule_single_function.html`** — Single-variable chain rule: `L(f(x))`
+  derived from first principles using differentials.
+
+---
+
+## Key insight
+
+The backpropagation algorithm is the multivariate chain rule, mechanized:
+
+- Each node computes its **local gradient** (derivative of its output w.r.t. its inputs)
+- The **upstream gradient** (`out.grad`) is multiplied in via the chain rule
+- `+=` accumulates contributions from all paths through the graph
+- The **topological sort** guarantees that upstream gradients are always
+  fully computed before a node's `_backward` is called
+
+```
+self.grad += local_gradient * out.grad
+```
+
+This one line, applied in the right order, is all of backpropagation.
+
+---
+
+## Architecture
+
+```
 micrograd/
-├── micro_grade.py              # Core autograd engine
-├── pytorch_demo.py             # Parity check with PyTorch
+├── micro_grade.py              # Autograd engine (Value class)
+├── MLP_object.py               # Neuron, Layer, MLP
+├── train_demo.py               # Full training loop
+├── pytorch_demo.py             # Gradient validation vs PyTorch
 ├── chain_rule_demo.html        # Multivariate chain rule proof
-├── demo_single_fonction_chain.html  # Single-variable chain rule proof
-└── computation_graph_complex.svg    # Example visualization
+└── chain_rule_single_function.html  # Single-variable chain rule proof
+```
 
-Requirements
+---
 
-    Python 3.8+
-    graphviz (system package + Python package)
-    numpy, matplotlib (for visualization)
-    torch (only for pytorch_demo.py)
+## References
 
-bash
-
-pip install graphviz numpy matplotlib torch
-
-License
-MIT — do whatever you want, but understand it first.
-
-    "I have no special talent. I am only passionately curious." — Albert Einstein
+- Karpathy, A. — *The spelled-out intro to neural networks and backpropagation: building micrograd*
