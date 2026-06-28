@@ -1,3 +1,6 @@
+import random
+
+from micro_grade import Value, draw_dot
 
 class Neuron:
     """
