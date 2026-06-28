@@ -17,6 +17,12 @@ class Neuron:
         # Learnable bias.
         self.b = Value(random.uniform(-1, 1))
 
+    def parameters(self):
+        return self.W + [self.b]
+
+
+
+
     def __call__(self, X):
         # Weighted sum of the inputs:
         # w1*x1 + w2*x2 + ... + wn*xn + b
@@ -43,6 +49,16 @@ class Layer:
         out = [neuron(x) for neuron in self.neurons]
         return out[0] if len(out) == 1 else out
 
+
+
+    def parameters(self):
+        params = []
+        for neuron in self.neurons:
+            ps = neuron.parameters()
+            params.extend(ps)
+        return params
+
+
 class MLP:
     """
     Multi-Layer Perceptron (MLP).
@@ -67,6 +83,12 @@ class MLP:
             for i in range(len(nouts))
         ]
 
+    def parameters(self):
+        params = []
+        for layer in self.layers:
+            params.extend(layer.parameters())
+        return params
+
     def __call__(self, x):
         # Forward propagation.
         # Each layer receives the output of the previous one.
@@ -84,21 +106,21 @@ class MLP:
 # -------------------------------------------------------------------------
 
 # Three input features
-x = [Value(2.0), Value(3.0), Value(-1.0)]
-
-# MLP architecture:
-# 3 inputs -> 4 neurons -> 4 neurons -> 1 output
-mlp = MLP(3, [4, 4, 1])
-
-# Forward propagation
-out = mlp(x)
-
-print(out)
-
-# Compute gradients for the whole network
-out.cal_backward()
-
-# Visualize the complete computation graph
-dot = draw_dot(out)
-dot.render("mlp_computation_graph", view=False)
-print("Graph saved to mlp_computation_graph.svg")
+# x = [Value(2.0), Value(3.0), Value(-1.0)]
+#
+# # MLP architecture:
+# # 3 inputs -> 4 neurons -> 4 neurons -> 1 output
+# mlp = MLP(3, [4, 4, 1])
+#
+# # Forward propagation
+# out = mlp(x)
+#
+# print(out)
+#
+# # Compute gradients for the whole network
+# out.cal_backward()
+#
+# # Visualize the complete computation graph
+# dot = draw_dot(out)
+# dot.render("mlp_computation_graph", view=False)
+# print("Graph saved to mlp_computation_graph.svg")
