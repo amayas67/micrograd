@@ -1,4 +1,4 @@
-from micro_grade import Value
+from micro_grade import Value,draw_dot
 import random
 import torch
 
@@ -61,10 +61,8 @@ class Layer:
         self.neurons = [Neuron(nin) for _ in range(nout)]
 
     def __call__(self, x):
-        # Evaluate every neuron on the same input.
-        # The output of a layer is therefore a vector.
-        return [neuron(x) for neuron in self.neurons]
-
+        out = [neuron(x) for neuron in self.neurons]
+        return out[0] if len(out) == 1 else out
 
 class MLP:
     """
@@ -95,4 +93,33 @@ class MLP:
         # Each layer receives the output of the previous one.
         for layer in self.layers:
             x = layer(x)
+
         return x
+
+
+
+
+
+# -------------------------------------------------------------------------
+# Example: forward pass through a small MLP
+# -------------------------------------------------------------------------
+
+# Three input features
+x = [Value(2.0), Value(3.0), Value(-1.0)]
+
+# MLP architecture:
+# 3 inputs -> 4 neurons -> 4 neurons -> 1 output
+mlp = MLP(3, [4, 4, 1])
+
+# Forward propagation
+out = mlp(x)
+
+print(out)
+
+# Compute gradients for the whole network
+out.cal_backward()
+
+# Visualize the complete computation graph
+dot = draw_dot(out)
+dot.render("mlp_computation_graph", view=False)
+print("Graph saved to mlp_computation_graph.svg")
