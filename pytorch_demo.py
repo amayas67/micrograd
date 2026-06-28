@@ -1,0 +1,98 @@
+from micro_grade import Value
+import random
+import torch
+
+
+# -------------------------------------------------------------------------
+# PyTorch demo
+#
+# This small example reproduces the same computation previously implemented
+# with the Value class. It highlights the similarities between our custom
+# autograd engine and PyTorch's automatic differentiation.
+# -------------------------------------------------------------------------
+
+x1 = torch.Tensor([2.0]).double(); x1.requires_grad = True
+x2 = torch.Tensor([0.0]).double(); x2.requires_grad = True
+w1 = torch.Tensor([-3.0]).double(); w1.requires_grad = True
+w2 = torch.Tensor([1.0]).double(); w2.requires_grad = True
+b  = torch.Tensor([6.8813735870195432]).double(); b.requires_grad = True
+
+n = x1 * w1 + x2 * w2 + b
+o = torch.tanh(n)
+
+o.backward()
+
+
+class Neuron:
+    """
+    Fully connected neuron.
+
+    Computes:
+        tanh(w·x + b)
+    """
+
+    def __init__(self, n):
+        # One learnable weight per input feature.
+        self.W = [Value(random.uniform(-1, 1)) for _ in range(n)]
+
+        # Learnable bias.
+        self.b = Value(random.uniform(-1, 1))
+
+    def __call__(self, X):
+        # Weighted sum of the inputs:
+        # w1*x1 + w2*x2 + ... + wn*xn + b
+        act = sum((wi * xi for wi, xi in zip(self.W, X)), self.b)
+
+        # Non-linear activation.
+        return act.tanh()
+
+
+class Layer:
+    """
+    Fully connected layer.
+
+    A layer is simply a collection of independent neurons.
+    Every neuron receives the same input vector and produces
+    its own activation.
+    """
+
+    def __init__(self, nin, nout):
+        # Create 'nout' neurons, each expecting 'nin' inputs.
+        self.neurons = [Neuron(nin) for _ in range(nout)]
+
+    def __call__(self, x):
+        # Evaluate every neuron on the same input.
+        # The output of a layer is therefore a vector.
+        return [neuron(x) for neuron in self.neurons]
+
+
+class MLP:
+    """
+    Multi-Layer Perceptron (MLP).
+
+    An MLP is a sequence of fully connected layers.
+    The output of one layer becomes the input of the next.
+    """
+
+    def __init__(self, nin, nouts):
+        # Example:
+        # nin = 3
+        # nouts = [4, 4, 1]
+        #
+        # sz = [3, 4, 4, 1]
+        #
+        # Layers created:
+        # Layer(3,4) -> Layer(4,4) -> Layer(4,1)
+        sz = [nin] + nouts
+
+        self.layers = [
+            Layer(sz[i], sz[i + 1])
+            for i in range(len(nouts))
+        ]
+
+    def __call__(self, x):
+        # Forward propagation.
+        # Each layer receives the output of the previous one.
+        for layer in self.layers:
+            x = layer(x)
+        return x
